@@ -374,7 +374,7 @@ export class Utils {
                 } while (fetchNext);
               }
             }
-
+            
             if (!SpotifyResultData || !['playlist', 'album'].includes(SpotifyResultData.type))
                 throw DMPErrors.INVALID_PLAYLIST;
 
