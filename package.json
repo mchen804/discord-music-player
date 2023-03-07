@@ -68,5 +68,8 @@
   "directories": {
     "doc": "docs",
     "test": "test"
+  },
+  "overrides": {
+    "discord-api-types": "^0.30.0"
   }
 }
