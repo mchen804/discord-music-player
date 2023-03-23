@@ -70,6 +70,9 @@
     "test": "test"
   },
   "overrides": {
-    "discord-api-types": "^0.30.0"
+    "ytsr": "github:Yonle/node-ytsr"
+  },
+  "resolutions": {
+    "ytsr": "github:Yonle/node-ytsr"
   }
 }
