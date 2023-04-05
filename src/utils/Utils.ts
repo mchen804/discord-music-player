@@ -311,7 +311,6 @@ export class Utils {
             const indexOfAlbum = Search.indexOf(albumSearch);
             let endpoint = '';
 
-
             if (indexOfPlaylist > 0) {
                 endpoint = 'playlists';
             } else if (indexOfAlbum > 0) {
@@ -337,8 +336,7 @@ export class Utils {
                 }
             );
             const { accessToken } = await tokenResponse.json();
-
-
+            
             let SpotifyResultData;
             let spotifyTracks = [];
 
