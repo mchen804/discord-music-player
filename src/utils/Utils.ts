@@ -336,7 +336,8 @@ export class Utils {
                 }
             );
             const { accessToken } = await tokenResponse.json();
-            
+
+
             let SpotifyResultData;
             let spotifyTracks = [];
 
@@ -372,7 +373,6 @@ export class Utils {
                 } while (fetchNext);
               }
             }
-            
             if (!SpotifyResultData || !['playlist', 'album'].includes(SpotifyResultData.type))
                 throw DMPErrors.INVALID_PLAYLIST;
 
