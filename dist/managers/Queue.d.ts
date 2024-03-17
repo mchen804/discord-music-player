@@ -47,7 +47,8 @@ export declare class Queue<T = unknown> {
      */
     play(search: Song | string, options?: PlayOptions & {
         immediate?: boolean;
-        data?: any;
+        seek?: number;
+        data?: T;
     }): Promise<Song>;
     /**
      * Plays or Queues a playlist (in a VoiceChannel)

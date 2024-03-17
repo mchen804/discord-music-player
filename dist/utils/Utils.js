@@ -12,7 +12,7 @@ const apple_music_metadata_1 = require("apple-music-metadata");
 const youtubei_1 = require("youtubei");
 const discord_js_1 = require("discord.js");
 let YouTube = new youtubei_1.Client();
-const { getData, getPreview } = (0, spotify_url_info_1.default)(isomorphic_unfetch_1.default);
+const { getPreview } = (0, spotify_url_info_1.default)(isomorphic_unfetch_1.default);
 class Utils {
     /**
      *
@@ -224,17 +224,74 @@ class Utils {
             return new __1.Playlist(AppleResult, Queue, SOptions.requestedBy);
         }
         else if (SpotifyPlaylistLink) {
-            let SpotifyResultData = await getData(Search).catch(() => null);
+            const playlistSearch = 'playlist/';
+            const albumSearch = 'album/';
+            const indexOfPlaylist = Search.indexOf(playlistSearch);
+            const indexOfAlbum = Search.indexOf(albumSearch);
+            let endpoint = '';
+            if (indexOfPlaylist > 0) {
+                endpoint = 'playlists';
+            }
+            else if (indexOfAlbum > 0) {
+                endpoint = 'albums';
+            }
+            let indexToUse = 0;
+            if (endpoint === 'playlists') {
+                indexToUse = indexOfPlaylist + playlistSearch.length;
+            }
+            else if (endpoint === 'albums') {
+                indexToUse = indexOfAlbum + albumSearch.length;
+            }
+            const searchId = Search.substring(indexToUse).split('?')[0];
+            // Create Spotify Guest Token
+            const tokenResponse = await (0, isomorphic_unfetch_1.default)('https://open.spotify.com/get_access_token?reason=transport&productType=web_player', {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const { accessToken } = await tokenResponse.json();
+            let SpotifyResultData;
+            let spotifyTracks = [];
+            if (endpoint && searchId) {
+                // Fetch Playlist/Album By Id
+                const trackResponse = await (0, isomorphic_unfetch_1.default)(`https://api.spotify.com/v1/${endpoint}/${searchId}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                });
+                SpotifyResultData = await trackResponse.json();
+                spotifyTracks = SpotifyResultData.tracks.items ?? [];
+            }
+            // Playlist has more than 100 songs, fetching remaining songs...
+            if (SpotifyResultData && spotifyTracks.length < SpotifyResultData.tracks.total) {
+                const tracksNextEndpoint = SpotifyResultData.tracks.next;
+                if (tracksNextEndpoint) {
+                    let fetchNext = tracksNextEndpoint;
+                    // Fetch playlist tracks through pagination until there is nothing left to fetch
+                    do {
+                        const tracksResponse = await (0, isomorphic_unfetch_1.default)(fetchNext, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                        });
+                        const { items, next } = await tracksResponse.json();
+                        spotifyTracks = spotifyTracks.concat(items);
+                        fetchNext = next;
+                    } while (fetchNext);
+                }
+            }
             if (!SpotifyResultData || !['playlist', 'album'].includes(SpotifyResultData.type))
                 throw __1.DMPErrors.INVALID_PLAYLIST;
             let SpotifyResult = {
                 name: SpotifyResultData.name,
-                author: SpotifyResultData.type === 'playlist' ? SpotifyResultData.owner.display_name : SpotifyResultData.artists[0].name,
+                author: SpotifyResultData.type === 'playlist' ? SpotifyResultData.owner?.display_name : SpotifyResultData.artists[0].name,
                 url: Search,
                 songs: [],
                 type: SpotifyResultData.type
             };
-            SpotifyResult.songs = (await Promise.all((SpotifyResultData.tracks?.items ?? []).map(async (track, index) => {
+            SpotifyResult.songs = (await Promise.all((spotifyTracks ?? []).map(async (track, index) => {
                 if (Limit !== -1 && index >= Limit)
                     return null;
                 if (SpotifyResult.type === 'playlist')
