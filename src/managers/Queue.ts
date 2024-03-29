@@ -1,6 +1,6 @@
 import {Guild, GuildChannelResolvable, GuildMember, StageChannel, VoiceChannel} from "discord.js";
 import {StreamConnection} from "../voice/StreamConnection";
-import {AudioResource, DiscordGatewayAdapterCreator, entersState, joinVoiceChannel, StreamType, VoiceConnectionStatus} from "@discordjs/voice";
+import {AudioResource, entersState, joinVoiceChannel, StreamType, VoiceConnectionStatus} from "@discordjs/voice";
 import ytdl from "discord-ytdl-core";
 import {
     DefaultPlayerOptions,
@@ -157,8 +157,20 @@ export class Queue<T = unknown> {
         let connection = joinVoiceChannel({
             guildId: channel.guild.id,
             channelId: channel.id,
-            adapterCreator: channel.guild.voiceAdapterCreator  as unknown as DiscordGatewayAdapterCreator,
+            adapterCreator: channel.guild.voiceAdapterCreator,
             selfDeaf: this.options.deafenOnJoin
+        });
+        connection.on('stateChange', (oldState, newState) => {
+            const oldNetworking = Reflect.get(oldState, 'networking');
+            const newNetworking = Reflect.get(newState, 'networking');
+          
+            const networkStateChangeHandler = (_oldNetworkState, newNetworkState) => {
+                const newUdp = Reflect.get(newNetworkState, 'udp');
+                clearInterval(newUdp?.keepAliveInterval);
+            }
+          
+            oldNetworking?.off('stateChange', networkStateChangeHandler);
+            newNetworking?.on('stateChange', networkStateChangeHandler);
         });
         let _connection: StreamConnection;
         try {
